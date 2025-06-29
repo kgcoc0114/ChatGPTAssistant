@@ -5,13 +5,17 @@
  * @format
  */
 
-import { NewAppScreen } from '@react-native/new-app-screen';
-import { Text, StyleSheet, useColorScheme, View } from 'react-native';
+import { Text, StyleSheet, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import ChatScreen from './src/features/chat/ChatScreen';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from '@react-native-vector-icons/ionicons';
+import VoiceScreen from './src/features/voice/VoiceScreen';
+import { Buffer } from 'buffer';
+
+if (typeof global.Buffer === 'undefined') {
+  global.Buffer = Buffer;
+}
 
 const Tab = createBottomTabNavigator();
 function SettingsScreen() {
@@ -21,16 +25,8 @@ function SettingsScreen() {
     </View>
   );
 }
-function VoiceScreen() {
-  return (
-    <View style={styles.container}>
-      <Text>設定</Text>
-    </View>
-  );
-}
 
 function App() {
-  // const insets = useSafeAreaInsets();
 
   return (
     <NavigationContainer>
@@ -105,7 +101,7 @@ function App() {
           name="Settings" 
           component={SettingsScreen}
           options={{
-            tabBarLabel: '設定',
+            tabBarLabel: 'Settings',
           }}
         />
       </Tab.Navigator>

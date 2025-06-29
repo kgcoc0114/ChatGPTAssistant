@@ -321,7 +321,7 @@ container: {
   aiHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     marginBottom: 8,
   },
   sectionLabel: {
@@ -339,6 +339,7 @@ container: {
     padding: 8,
     borderRadius: 8,
     backgroundColor: '#f3f4f6',
+    justifyContent: 'center',
   },
   playButtonActive: {
     backgroundColor: '#dbeafe',

@@ -1,4 +1,5 @@
-import { Dirs, FileSystem } from 'react-native-file-access';
+import RNFS from 'react-native-fs';
+import axios from 'axios';
 import { ENV } from '../../config/env';
 
 class ChatGPTService {
@@ -38,29 +39,43 @@ class ChatGPTService {
   // OpenAI TTS API
   static async textToSpeech(text: string, voice: string = 'nova'): Promise<string> {
     try {
-      const fileName = `speech_${Date.now()}.mp3`;
-      const filePath = `${Dirs.CacheDir}/${fileName}`;
-
-      await FileSystem.fetch(ENV.OPENAI_TTS_URL, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${ENV.OPENAI_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      const response = await axios.post(
+        ENV.OPENAI_TTS_URL,
+        {
           model: 'tts-1',
           input: text,
           voice,
           response_format: 'mp3',
-        }),
-        path: filePath,
-      });
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${ENV.OPENAI_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          responseType: 'arraybuffer',
+        }
+      );
 
-      return filePath;
+      const base64Audio = Buffer.from(response.data).toString('base64');
+      const fileName = `speech_${Date.now()}.mp3`;
+      const dirPath = RNFS.DocumentDirectoryPath;
+      const filePath = `${dirPath}/${fileName}`;
 
-    } catch (error) {
-      console.error('TTS Error:', error);
-      throw error;
+      const dirExists = await RNFS.exists(dirPath);
+      if (!dirExists) {
+        await RNFS.mkdir(dirPath);
+      } else {
+        console.log('沒目錄:', dirPath);
+      }
+
+      await RNFS.writeFile(filePath, base64Audio, 'base64');
+
+      const uri = `file://${filePath}`;
+      console.log('✅ 成功寫入音訊檔案:', uri);
+      return uri;
+    } catch (err) {
+      console.error('❌ 寫入音訊失敗:', err);
+      throw err;
     }
   }
 }
