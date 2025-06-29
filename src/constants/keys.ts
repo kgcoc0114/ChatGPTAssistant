@@ -1,0 +1,3 @@
+export const STORAGE_KEYS = {
+  SELECTED_MODEL: 'SELECTED_MODEL'
+};

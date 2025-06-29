@@ -73,3 +73,12 @@ yarn-error.log
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
+
+# ENV
+config/env.ts
+
+node_modules/
+*.log
+.DS_Store
+android/app/build/
+ios/build/
