@@ -76,7 +76,7 @@ yarn-error.log
 
 # ENV
 config/env.ts
-
+ios/ChatGPTAssistant/GoogleService-Info.plist
 node_modules/
 *.log
 .DS_Store

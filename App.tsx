@@ -6,12 +6,10 @@
  */
 
 import { Text, StyleSheet, View } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import ChatScreen from './src/features/chat/ChatScreen';
-import Icon from '@react-native-vector-icons/ionicons';
-import VoiceScreen from './src/features/voice/VoiceScreen';
 import { Buffer } from 'buffer';
+import { AuthProvider } from './src/context/AuthContext';
+import AppNavigator from './src/navigation/AppNavigator';
 
 if (typeof global.Buffer === 'undefined') {
   global.Buffer = Buffer;
@@ -27,85 +25,10 @@ function SettingsScreen() {
 }
 
 function App() {
-
   return (
-    <NavigationContainer>
-      <Tab.Navigator
-        screenOptions={({ route }) => ({
-          tabBarIcon: ({ focused, color, size }) => {
-            let iconName;
-
-            if (route.name === 'Chat') {
-              iconName = "chatbox-ellipses-outline";
-            } else if (route.name === 'Voice') {
-              iconName = "mic-outline";
-            } else if (route.name === 'Settings') {
-              iconName = "settings";
-            }
-
-            return <Icon name={iconName} size={size} color={color} />;
-          },
-          tabBarActiveTintColor: '#007AFF',
-          tabBarInactiveTintColor: 'gray',
-          tabBarStyle: {
-            backgroundColor: 'white',
-            borderTopWidth: 1,
-            borderTopColor: '#E5E5E5',
-            // height: 60,
-            paddingBottom: 8,// + insets.bottom,
-            paddingTop: 8,
-          },
-          tabBarLabelStyle: {
-            fontSize: 12,
-            fontWeight: '500',
-          },
-          headerShown: true, // 隱藏頂部標題欄
-        })}
-      >
-        <Tab.Screen 
-          name="Chat" 
-          component={ChatScreen}
-          options={{
-            tabBarLabel: 'Chat',
-            headerShown: true,
-            headerTitle: 'ChatGPT 對話',
-            headerStyle: {
-              backgroundColor: '#007AFF',
-              // height: 90,
-            },
-            headerTintColor: '#fff',
-            headerTitleStyle: {
-              fontWeight: 'bold',
-              fontSize: 18,
-            },
-          }}
-        />
-        <Tab.Screen 
-          name="Voice" 
-          component={VoiceScreen}
-          options={{
-            tabBarLabel: 'Voice',
-            headerShown: true,
-            headerTitle: 'AI 語音對話',
-            headerStyle: {
-              backgroundColor: '#059669',
-            },
-            headerTintColor: '#fff',
-            headerTitleStyle: {
-              fontWeight: 'bold',
-              fontSize: 18,
-            },
-          }}
-        />
-        <Tab.Screen 
-          name="Settings" 
-          component={SettingsScreen}
-          options={{
-            tabBarLabel: 'Settings',
-          }}
-        />
-      </Tab.Navigator>
-    </NavigationContainer>
+    <AuthProvider>
+      <AppNavigator/>
+    </AuthProvider>
   );
 }
 
