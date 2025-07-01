@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View } from 'react-native';
+import { View, Alert } from 'react-native';
 import { KeyboardAvoidingView, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useHeaderHeight } from '@react-navigation/elements';
@@ -27,10 +27,19 @@ const ChatScreen = () => {
   const modelSelection = useModelSelection();
   const input = useChatInput();
 
+  // firebase error
+  useEffect(() => {
+    if (messages.error) {
+      Alert.alert('連線錯誤', '無法連接到伺服器，請檢查網路連線');
+    }
+  }, [messages.error]);
+
   // welcome
   useEffect(() => {
-    messages.initializeWithWelcome();
-  }, [messages.initializeWithWelcome]);
+    if (!messages.firestoreLoading) {
+      messages.initializeWithWelcome();
+    }
+  }, [messages.firestoreLoading]);
 
   // send messages
   const handleSendMessage = async () => {
@@ -42,7 +51,7 @@ const ChatScreen = () => {
     input.clearInput();
     await messages.sendMessage(messageText, modelId);
   };
-
+  
   return (
     <>
       

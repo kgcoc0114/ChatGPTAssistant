@@ -7,25 +7,34 @@ import { MessageItem } from './MessageItem';
 interface MessageListProps {
   messages: Message[];
   keyboardHeight: number;
+  loading?: boolean;
 }
 
 export const MessageList = ({
   messages,
   keyboardHeight,
+  loading = false,
 }: MessageListProps) => {
   const flatListRef = useRef<FlatList>(null);
+  const previousMessageCount = useRef(0);
 
   // scrollToEnd
   useEffect(() => {
-    const timer = setTimeout(() => {
-      flatListRef.current?.scrollToEnd({ animated: true });
-    }, 100);
+    if (messages.length > previousMessageCount.current && !loading) {
+      const timer = setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 100);
 
-    return () => clearTimeout(timer);
-  }, [messages]);
+      previousMessageCount.current = messages.length;
+      return () => clearTimeout(timer);
+    }
+    previousMessageCount.current = messages.length;
+  }, [messages.length, loading]);
 
   const handleContentSizeChange = () => {
-    flatListRef.current?.scrollToEnd({ animated: true });
+    if (!loading) {
+      flatListRef.current?.scrollToEnd({ animated: true });
+    }
   };
 
   const scrollToEnd = () => {
@@ -34,6 +43,7 @@ export const MessageList = ({
     }, 100);
   };
   
+  // keyboard listener
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
       'keyboardDidShow',
@@ -55,6 +65,10 @@ export const MessageList = ({
     };
   }, []);
 
+  if (loading) {
+    return null;
+  }
+
   return (
     <FlatList
       ref={flatListRef}
@@ -66,10 +80,12 @@ export const MessageList = ({
         paddingLeft: 8,
         paddingRight: 8,
         paddingBottom: keyboardHeight || 20,
+        flexGrow: 1
       }}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
       onContentSizeChange={handleContentSizeChange}
+      removeClippedSubviews={false}
     />
   );
 };

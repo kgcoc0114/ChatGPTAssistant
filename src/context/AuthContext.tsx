@@ -123,7 +123,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }, { merge: true });
       }
     } catch (error) {
-      console.error('[Error] 儲存用戶資料失敗:', error);
+      console.error('儲存用戶資料失敗:', error);
     }
   };
 
