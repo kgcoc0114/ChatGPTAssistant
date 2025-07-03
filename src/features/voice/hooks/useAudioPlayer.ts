@@ -9,11 +9,10 @@ export const useAudioPlayer = () => {
 
   const playAudio = useCallback(async (audioUrl: string, audioId: string = 'default') => {
     try {
-      console.log('🔊 播放音訊:', audioUrl);
 
       const fileExists = await RNFS.exists(audioUrl);
       if (!fileExists) {
-        console.warn(`⚠️ 找不到音訊檔案：${audioUrl}`);
+        console.warn(`找不到音訊檔案：${audioUrl}`);
         return;
       }
       // reset

@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import firestore from '@react-native-firebase/firestore';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Message } from '../models/Message';
+import { useAuth } from '../../../context/AuthContext';
+import { FirestoreService, MessageData } from '../../../services/FirestoreService';
 
 export interface UseFirestoreMessagesReturn {
   // State
@@ -9,162 +10,93 @@ export interface UseFirestoreMessagesReturn {
   error: Error | null;
   
   // Actions
-  addMessage: (text: string, isUser: boolean, isLoading?: boolean) => Promise<string>;
-  updateMessage: (messageId: string, updates: Partial<Pick<Message, 'text' | 'isLoading'>>) => Promise<void>;
+  addMessage: (text: string, isUser: boolean) => Promise<string>;
+  updateMessage: (messageId: string, updates: Partial<Pick<Message, 'text'>>) => Promise<void>;
   clearMessages: () => Promise<void>;
-  createChatIfNotExists: () => Promise<void>;
 }
 
-export const useFirestoreMessages = (chatId: string): UseFirestoreMessagesReturn => {
+export const useFirestoreMessages = (chatId: string | null): UseFirestoreMessagesReturn => {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const unsubscribeRef = useRef<(() => void) | null>(null);
+  const { user } = useAuth();
+  const userId = user?.id;
+  const isReady = !!userId && !!chatId;
 
-  const COLLECTION_CHATS = 'chats';
-  const COLLECTION_MESSAGES = 'messages';
-
-  // create chat room if needed
-  const createChatIfNotExists = useCallback(async () => {
-    try {
-      const chatRef = firestore()
-        .collection(COLLECTION_CHATS)
-        .doc(chatId);
-      
-      const chatDoc = await chatRef.get();
-      
-      if (!chatDoc.exists()) {
-        await chatRef.set({
-          createdAt: firestore.FieldValue.serverTimestamp(),
-          lastActivity: firestore.FieldValue.serverTimestamp(),
-        });
-      }
-    } catch (err) {
-      console.error('Error creating chat:', err);
-      setError(err as Error);
+  const addMessage = useCallback(async (text: string, isUser: boolean): Promise<string> => {
+    if (!userId || !chatId) {
+      throw new Error('Missing userId or chatId');
     }
-  }, [chatId]);
-
-  const addMessage = useCallback(async (
-    text: string,
-    isUser: boolean,
-    isLoading: boolean = false
-  ): Promise<string> => {
-    try {
-      const messageRef = await firestore()
-        .collection(COLLECTION_CHATS)
-        .doc(chatId)
-        .collection(COLLECTION_MESSAGES)
-        .add({
-          text,
-          isUser,
-          isLoading,
-          timestamp: firestore.FieldValue.serverTimestamp(),
-          createdAt: firestore.FieldValue.serverTimestamp(),
-        });
-      
-      return messageRef.id;
-    } catch (err) {
-      console.error('Error adding message:', err);
-      setError(err as Error);
-      throw err;
-    }
-  }, [chatId]);
+    return FirestoreService.addMessage(userId, chatId, text, isUser);
+  }, [userId, chatId]);
 
   const updateMessage = useCallback(async (
     messageId: string,
-    updates: Partial<Pick<Message, 'text' | 'isLoading'>>
+    updates: Partial<Pick<Message, 'text'>>
   ): Promise<void> => {
-    try {
-      await firestore()
-        .collection(COLLECTION_CHATS)
-        .doc(chatId)
-        .collection(COLLECTION_MESSAGES)
-        .doc(messageId)
-        .update({
-          ...updates,
-          updatedAt: firestore.FieldValue.serverTimestamp(),
-        });
-    } catch (err) {
-      console.error('Error updating message:', err);
-      setError(err as Error);
-      throw err;
+    if (!userId || !chatId) {
+      throw new Error('Missing userId or chatId');
     }
-  }, [chatId]);
+    return FirestoreService.updateMessage(userId, chatId, messageId, updates);
+  }, [userId, chatId]);
 
   const clearMessages = useCallback(async (): Promise<void> => {
-    try {
-      const messagesRef = firestore()
-        .collection(COLLECTION_CHATS)
-        .doc(chatId)
-        .collection(COLLECTION_MESSAGES);
-
-      const snapshot = await messagesRef.get();
-      const batch = firestore().batch();
-
-      snapshot.docs.forEach((doc) => {
-        batch.delete(doc.ref);
-      });
-
-      await batch.commit();
-    } catch (err) {
-      console.error('Error clearing messages:', err);
-      setError(err as Error);
-      throw err;
+    if (!userId || !chatId) {
+      throw new Error('Missing userId or chatId');
     }
-  }, [chatId]);
+    return FirestoreService.clearMessages(userId, chatId);
+  }, [userId, chatId]);
 
   // message listener
   useEffect(() => {
-    if (!chatId) return;
+    // reset listener
+    if (unsubscribeRef.current) {
+      unsubscribeRef.current();
+      unsubscribeRef.current = null;
+    }
 
-    setLoading(true);
+    // reset data
+    setMessages([]);
     setError(null);
 
-    createChatIfNotExists();
+    if (!isReady) {
+      setLoading(false);
+      return;
+    }
 
-    // setup firestore listener
-    const unsubscribe = firestore()
-      .collection(COLLECTION_CHATS)
-      .doc(chatId)
-      .collection(COLLECTION_MESSAGES)
-      .orderBy('timestamp', 'asc')
-      .onSnapshot(
-        (snapshot) => {
-          const newMessages: Message[] = [];
-          
-          snapshot.forEach((doc) => {
-            const data = doc.data();
-            newMessages.push({
-              id: doc.id,
-              text: data.text || '',
-              isUser: data.isUser || false,
-              timestamp: data.timestamp?.toDate() || new Date(),
-              isLoading: data.isLoading || false,
-            });
-          });
+    setLoading(true);
 
-          setMessages(newMessages);
-          setLoading(false);
-          setError(null);
-        },
-        (err) => {
-          console.error('Firestore listener error:', err);
-          setError(err as Error);
-          setLoading(false);
-        }
-      );
+    const unsubscribe = FirestoreService.subscribeToMessages(
+      userId!,
+      chatId!,
+      (messageData: MessageData[]) => {
+        const transformedMessages: Message[] = messageData.map(data => ({
+          id: data.id,
+          text: data.text,
+          isUser: data.isUser,
+          timestamp: FirestoreService.safeToDate(data.timestamp),
+          isLoading: false,
+        }));
+        setMessages(transformedMessages);
+        setLoading(false);
+        setError(null);
+      },
+      (error: Error) => {
+        setError(error);
+        setLoading(false);
+      }
+    );
 
     unsubscribeRef.current = unsubscribe;
 
-    // deinit
     return () => {
       if (unsubscribeRef.current) {
         unsubscribeRef.current();
         unsubscribeRef.current = null;
       }
     };
-  }, [chatId, createChatIfNotExists]);
+  }, [isReady, userId, chatId]);
 
   return {
     // State
@@ -176,6 +108,5 @@ export const useFirestoreMessages = (chatId: string): UseFirestoreMessagesReturn
     addMessage,
     updateMessage,
     clearMessages,
-    createChatIfNotExists,
   };
 };

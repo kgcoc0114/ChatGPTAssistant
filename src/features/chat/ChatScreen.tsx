@@ -1,14 +1,13 @@
-import React, { useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { View, Alert } from 'react-native';
 import { KeyboardAvoidingView, Platform } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { RouteProp, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { useHeaderHeight } from '@react-navigation/elements';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useChatMessages } from './hooks/useChatMessages';
 import { useModelSelection } from './hooks/useModelSelection';
 import { useChatInput } from './hooks/useChatInput';
-import { useKeyboardHeight } from './hooks/useKeyboardHeight';
+import { useChatManager } from './hooks/useChatManager';
 
 import { ChatHeader } from './components/ChatHeader';
 import { MessageList } from './components/MessageList';
@@ -17,44 +16,72 @@ import { ModelSelector } from './components/ModelSelector';
 
 import styles from '../../styles/styles';
 
+type ChatScreenRouteProp = RouteProp<{
+  ChatScreen: { chatId?: string };
+}, 'ChatScreen'>;
+
 const ChatScreen = () => {
   const navigation = useNavigation();
   const headerHeight = useHeaderHeight();
-  const keyboardHeight = useHeaderHeight();
+  const route = useRoute<ChatScreenRouteProp>();
+  const routeChatId = route.params?.chatId;
 
-  // hooks
-  const messages = useChatMessages();
+  // 統一的 Chat 管理 hook
+  const chatManager = useChatManager(routeChatId);
+  
+  // 其他 hooks
+  const messages = useChatMessages(chatManager.currentChatId);
   const modelSelection = useModelSelection();
   const input = useChatInput();
 
-  // firebase error
+  // 當 route chatId 變化時，更新 chat manager
   useEffect(() => {
-    if (messages.error) {
-      Alert.alert('連線錯誤', '無法連接到伺服器，請檢查網路連線');
+    if (routeChatId !== chatManager.currentChatId) {
+      chatManager.switchToChat(routeChatId);
     }
-  }, [messages.error]);
+  }, [routeChatId]);
 
-  // welcome
+  // 監聽 chat manager 的狀態變化
   useEffect(() => {
-    if (!messages.firestoreLoading) {
-      messages.initializeWithWelcome();
+    if (chatManager.error) {
+      Alert.alert('錯誤', chatManager.error.message);
     }
-  }, [messages.firestoreLoading]);
+  }, [chatManager.error]);
 
-  // send messages
+  // 當進入畫面時初始化
+  useFocusEffect(
+    useCallback(() => {
+      chatManager.initializeChat();
+    }, [chatManager.currentChatId])
+  );
+
+  // 發送訊息
   const handleSendMessage = async () => {
     if (!input.canSend || messages.isLoading) return;
     
     const messageText = input.inputText;
     const modelId = modelSelection.selectedModel?.id;
     
+    // 確保有有效的 chat ID
+    if (!chatManager.currentChatId) {
+      await chatManager.createNewChat();
+    }
+    
     input.clearInput();
     await messages.sendMessage(messageText, modelId);
   };
+
+  // 如果正在初始化，顯示 loading
+  if (chatManager.isInitializing) {
+    return (
+      <View style={styles.loadingContainer}>
+        {/* Loading component */}
+      </View>
+    );
+  }
   
   return (
     <>
-      
       <ChatHeader 
         navigation={navigation}
         isLoading={messages.isLoading}
@@ -70,7 +97,7 @@ const ChatScreen = () => {
         <View style={{ flex: 1 }}>
           <MessageList 
             messages={messages.messages}
-            keyboardHeight={keyboardHeight}
+            keyboardHeight={headerHeight}
           />
         </View>
         
@@ -82,13 +109,12 @@ const ChatScreen = () => {
         />
       </KeyboardAvoidingView>
       
-        <ModelSelector 
-          visible={modelSelection.isModelSelectorVisible}
-          selectedModel={modelSelection.selectedModel}
-          // availableModels={modelSelection.availableModels}
-          onClose={modelSelection.hideModelSelector}
-          onModelSelect={modelSelection.selectModel}
-        />
+      <ModelSelector 
+        visible={modelSelection.isModelSelectorVisible}
+        selectedModel={modelSelection.selectedModel}
+        onClose={modelSelection.hideModelSelector}
+        onModelSelect={modelSelection.selectModel}
+      />
     </>
   );
 };

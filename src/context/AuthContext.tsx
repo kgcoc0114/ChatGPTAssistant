@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import auth from '@react-native-firebase/auth';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
-import firestore from '@react-native-firebase/firestore';
+import { FirestoreService } from '../services/FirestoreService';
+import { ENV } from '../../config/env';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -41,20 +42,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // 用戶未登入
         setUser(null);
       }
-      
-      if (isLoading) {
-        setIsLoading(false);
-      }
+      setIsLoading(false);
     });
 
     return unsubscribe;
-  }, [isLoading]);
+  }, []);
 
   const configureGoogleSignIn = () => {
     GoogleSignin.configure({
-      iosClientId: '391242174728-42buasphe2ubrak9i4p14db541sglq3o.apps.googleusercontent.com',
-      webClientId: '391242174728-78o34qg3oij1qjp442c63ulej0c7ueg7.apps.googleusercontent.com',
-    })
+      iosClientId: ENV.GOOGLE_SIGNIN.iosClientId,
+      webClientId: ENV.GOOGLE_SIGNIN.webClientId,
+    });
   };
 
   const loginWithGoogle = async (): Promise<boolean> => {
@@ -77,7 +75,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       if (userCredential.user) {
         // 儲存或更新用戶資料到 Firestore
-        await saveUserToFirestore(userCredential.user);
+        await FirestoreService.saveUser(userCredential.user);
         return true;
       }
       return false;
@@ -93,37 +91,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       await GoogleSignin.signOut();
     } catch (error) {
       console.error('登出錯誤:', error);
-    }
-  };
-
-  const saveUserToFirestore = async (firebaseUser: any) => {
-    try {
-      const userRef = firestore().collection('users').doc(firebaseUser.uid);
-      const userDoc = await userRef.get();
-
-      if (!userDoc.exists()) {
-        await userRef.set({
-          userId: firebaseUser.uid,
-          email: firebaseUser.email,
-          name: firebaseUser.displayName || '使用者',
-          photoURL: firebaseUser.photoURL || null,
-          createdAt: firestore.FieldValue.serverTimestamp(),
-          lastLoginAt: firestore.FieldValue.serverTimestamp(),
-          updatedAt: firestore.FieldValue.serverTimestamp(),
-        });
-      } else {
-        // 現有用戶：不更新 createdAt
-        await userRef.set({
-          userId: firebaseUser.uid,
-          email: firebaseUser.email,
-          name: firebaseUser.displayName || '使用者',
-          photoURL: firebaseUser.photoURL || null,
-          lastLoginAt: firestore.FieldValue.serverTimestamp(),
-          updatedAt: firestore.FieldValue.serverTimestamp(),
-        }, { merge: true });
-      }
-    } catch (error) {
-      console.error('儲存用戶資料失敗:', error);
     }
   };
 

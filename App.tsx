@@ -16,13 +16,6 @@ if (typeof global.Buffer === 'undefined') {
 }
 
 const Tab = createBottomTabNavigator();
-function SettingsScreen() {
-  return (
-    <View style={styles.container}>
-      <Text>設定</Text>
-    </View>
-  );
-}
 
 function App() {
   return (

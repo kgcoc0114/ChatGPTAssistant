@@ -71,10 +71,10 @@ class ChatGPTService {
       await RNFS.writeFile(filePath, base64Audio, 'base64');
 
       const uri = `file://${filePath}`;
-      console.log('✅ 成功寫入音訊檔案:', uri);
+      console.log('[SUCCESS] 成功寫入音訊檔案:', uri);
       return uri;
     } catch (err) {
-      console.error('❌ 寫入音訊失敗:', err);
+      console.error('[Error] 寫入音訊失敗:', err);
       throw err;
     }
   }

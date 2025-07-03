@@ -5,6 +5,8 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { useAuth } from '../context/AuthContext';
 import LoginScreen from '../features/login/LoginScreen';
 import MainTabNavigator from '../features/main/MainTabNavigator';
+import ChatHistoryScreen from '../features/chatHistory/ChatHistoryScreen';
+import ChatScreen from '../features/chat/ChatScreen';
 
 const Stack = createStackNavigator();
 
@@ -26,7 +28,21 @@ const AppNavigator = () => {
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {isAuthenticated ? (
           // login
-          <Stack.Screen name="Main" component={MainTabNavigator} />
+          <>
+            <Stack.Screen name="MainTab" component={MainTabNavigator} />
+            <Stack.Screen
+              name="ChatHistory"
+              component={ChatHistoryScreen}
+              options={{
+                headerShown: true,
+                headerTitle: '歷史訊息',
+                headerBackTitle: '',
+                headerTintColor: '#2A2D38',
+                headerTitleStyle: {
+                  fontSize: 16,
+                },
+              }}/>
+          </>
         ) : (
           // not login
           <Stack.Screen name="Login" component={LoginScreen} />
