@@ -1,8 +1,9 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import auth from '@react-native-firebase/auth';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import auth, { getAuth } from '@react-native-firebase/auth';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { FirestoreService } from '../services/FirestoreService';
 import { ENV } from '../../config/env';
+import { getApp } from '@react-native-firebase/app';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -23,12 +24,16 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const authInstance = useMemo(() => {
+      const app = getApp();
+      return getAuth(app);
+    }, []);
 
   useEffect(() => {
     configureGoogleSignIn();
     
     // 監聽 Firebase 認證狀態變化
-    const unsubscribe = auth().onAuthStateChanged(async (firebaseUser) => {
+    const unsubscribe = authInstance.onAuthStateChanged(async (firebaseUser) => {
       if (firebaseUser) {
         // 用戶已登入
         const userData: User = {
@@ -71,7 +76,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       const googleCredential = auth.GoogleAuthProvider.credential(idToken);
-      const userCredential = await auth().signInWithCredential(googleCredential);
+      const userCredential = await authInstance.signInWithCredential(googleCredential);
       
       if (userCredential.user) {
         // 儲存或更新用戶資料到 Firestore
@@ -87,7 +92,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const logout = async () => {
     try {
-      await auth().signOut();
+      await authInstance.signOut();
       await GoogleSignin.signOut();
     } catch (error) {
       console.error('登出錯誤:', error);

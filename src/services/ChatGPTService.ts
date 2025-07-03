@@ -57,7 +57,7 @@ class ChatGPTService {
       );
 
       const base64Audio = Buffer.from(response.data).toString('base64');
-      const fileName = `speech_${Date.now()}.mp3`;
+      const fileName = `speech.mp3`;
       const dirPath = RNFS.DocumentDirectoryPath;
       const filePath = `${dirPath}/${fileName}`;
 

@@ -3,7 +3,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import ChatScreen from '../../features/chat/ChatScreen';
 import VoiceScreen from '../../features/voice/VoiceScreen';
 import Icon from '@react-native-vector-icons/ionicons';
-import SettingsScreen from './SettingsScreen';
+import SettingsScreen from '../settings/SettingsScreen';
 
 const Tab = createBottomTabNavigator();
 

@@ -28,9 +28,9 @@ export const ConversationHistory = ({
     </View>
   );
 
-  const ConversationItem = ({ conversation }: { conversation: VoiceMessage }) => {
+  const ConversationItem = ({ conversation, positionIndex }: { conversation: VoiceMessage, positionIndex: number }) => {
     const isCurrentlyPlaying = currentAudioId === conversation.id;
-    
+    const isFirstMessage = positionIndex === 0;
     return (
       <View key={conversation.id} style={styles.conversationItem}>
         <Text style={styles.timestamp}>
@@ -56,7 +56,7 @@ export const ConversationHistory = ({
               <Text style={styles.aiIndicator}>🤖</Text>
               <Text style={styles.sectionLabel}>AI 回覆：</Text>
             </View>
-            {conversation.audioUrl && (
+            {isFirstMessage && conversation.audioUrl && (
               <TouchableOpacity
                 onPress={() => {
                   if (!conversation.audioUrl) return;
@@ -94,8 +94,8 @@ export const ConversationHistory = ({
       {!hasConversations ? (
         <EmptyState />
       ) : (
-        conversations.map((conversation) => (
-          <ConversationItem key={conversation.id} conversation={conversation} />
+        conversations.map((conversation, index) => (
+          <ConversationItem key={conversation.id} conversation={conversation} positionIndex={index} />
         ))
       )}
     </ScrollView>

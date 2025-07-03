@@ -1,5 +1,7 @@
-import firestore, { FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
-type FirestoreTimestamp = FirebaseFirestoreTypes.Timestamp | FirebaseFirestoreTypes.FieldValue;
+import { getApp } from '@react-native-firebase/app';
+import firestore, { FieldValue, FirebaseFirestoreTypes, getFirestore, increment, serverTimestamp, Timestamp } from '@react-native-firebase/firestore';
+import { useMemo } from 'react';
+type FirestoreTimestamp = Timestamp | FieldValue;
 
 export interface ChatData {
   chatId: string;
@@ -40,8 +42,18 @@ export class FirestoreService {
     MESSAGES: 'messages',
   } as const;
 
+  private static firestoreInstance: ReturnType<typeof getFirestore> | null = null;
+
+  private static getFirestoreInstance() {
+    if (!this.firestoreInstance) {
+      const app = getApp();
+      this.firestoreInstance = getFirestore(app);
+    }
+    return this.firestoreInstance;
+  }
+
   private static getUserRef(userId: string) {
-    return firestore().collection(this.COLLECTIONS.USERS).doc(userId);
+    return this.getFirestoreInstance().collection(this.COLLECTIONS.USERS).doc(userId);
   }
 
   private static getChatRef(userId: string, chatId: string) {
@@ -71,15 +83,15 @@ export class FirestoreService {
         email: firebaseUser.email,
         name: firebaseUser.displayName || '使用者',
         photoURL: firebaseUser.photoURL || undefined,
-        lastLoginAt: firestore.FieldValue.serverTimestamp(),
-        updatedAt: firestore.FieldValue.serverTimestamp(),
+        lastLoginAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
       };
 
       if (!userDoc.exists) {
         // 新用戶
         await userRef.set({
           ...userData,
-          createdAt: firestore.FieldValue.serverTimestamp(),
+          createdAt: serverTimestamp(),
         });
       } else {
         // 現有用戶
@@ -115,8 +127,8 @@ export class FirestoreService {
         title: '',
         lastText: '',
         messageCount: 0,
-        createdAt: firestore.FieldValue.serverTimestamp(),
-        lastActivity: firestore.FieldValue.serverTimestamp(),
+        createdAt: serverTimestamp(),
+        lastActivity: serverTimestamp(),
         ...initialData,
       };
 
@@ -157,7 +169,7 @@ export class FirestoreService {
     try {
       await this.getChatRef(userId, chatId).update({
         ...updates,
-        updatedAt: firestore.FieldValue.serverTimestamp(),
+        updatedAt: serverTimestamp(),
       });
     } catch (error) {
       console.error('更新聊天資料失敗:', error);
@@ -225,8 +237,8 @@ export class FirestoreService {
       batch.set(messageRef, {
         text,
         isUser,
-        timestamp: firestore.FieldValue.serverTimestamp(),
-        createdAt: firestore.FieldValue.serverTimestamp(),
+        timestamp: serverTimestamp(),
+        createdAt: serverTimestamp(),
         userId,
         chatId,
       });
@@ -235,8 +247,8 @@ export class FirestoreService {
       const chatRef = this.getChatRef(userId, chatId);
       batch.update(chatRef, {
         lastText: text,
-        lastActivity: firestore.FieldValue.serverTimestamp(),
-        messageCount: firestore.FieldValue.increment(1),
+        lastActivity: serverTimestamp(),
+        messageCount: increment(1),
       });
       
       await batch.commit();
@@ -258,7 +270,7 @@ export class FirestoreService {
         .doc(messageId)
         .update({
           ...updates,
-          updatedAt: firestore.FieldValue.serverTimestamp(),
+          updatedAt: serverTimestamp(),
         });
     } catch (error) {
       console.error('更新訊息失敗:', error);
@@ -279,7 +291,7 @@ export class FirestoreService {
       // 2. 重置聊天計數
       batch.update(this.getChatRef(userId, chatId), {
         messageCount: 0,
-        lastActivity: firestore.FieldValue.serverTimestamp(),
+        lastActivity: serverTimestamp(),
       });
       
       await batch.commit();
