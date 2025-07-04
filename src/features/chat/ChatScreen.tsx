@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { View, Alert } from 'react-native';
 import { KeyboardAvoidingView, Platform } from 'react-native';
 import { RouteProp, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
@@ -26,29 +26,27 @@ const ChatScreen = () => {
   const route = useRoute<ChatScreenRouteProp>();
   const routeChatId = route.params?.chatId;
 
-  // 統一的 Chat 管理 hook
   const chatManager = useChatManager(routeChatId);
   
-  // 其他 hooks
   const messages = useChatMessages(chatManager.currentChatId);
   const modelSelection = useModelSelection();
   const input = useChatInput();
 
-  // 當 route chatId 變化時，更新 chat manager
+  // listen routeChatId
   useEffect(() => {
     if (routeChatId !== chatManager.currentChatId) {
       chatManager.switchToChat(routeChatId);
     }
   }, [routeChatId]);
 
-  // 監聽 chat manager 的狀態變化
+  // listen chatManager
   useEffect(() => {
     if (chatManager.error) {
       Alert.alert('錯誤', chatManager.error.message);
     }
   }, [chatManager.error]);
 
-  // 當進入畫面時初始化
+  // viewWillAppear
   useFocusEffect(
     useCallback(() => {
       chatManager.initializeChat();
@@ -62,7 +60,6 @@ const ChatScreen = () => {
     const messageText = input.inputText;
     const modelId = modelSelection.selectedModel?.id;
     
-    // 確保有有效的 chat ID
     if (!chatManager.currentChatId) {
       await chatManager.createNewChat();
     }
@@ -71,7 +68,7 @@ const ChatScreen = () => {
     await messages.sendMessage(messageText, modelId);
   };
 
-  // 如果正在初始化，顯示 loading
+  // loading
   if (chatManager.isInitializing) {
     return (
       <View style={styles.loadingContainer}>

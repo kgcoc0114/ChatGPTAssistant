@@ -24,10 +24,7 @@ export const useVoiceRecognition = (
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [recognizedText, setRecognizedText] = useState<string>('');
   const [permissionGranted, setPermissionGranted] = useState<boolean>(false);
-
-  const isListening = useMemo(() => {
-    return isRecording && recognizedText === '正在聆聽...';
-  }, [isRecording, recognizedText]);
+  const [isListening, setIsListening] = useState(false);
 
   const requestPermission = useCallback(async (): Promise<void> => {
     if (Platform.OS === 'android') {
@@ -97,6 +94,7 @@ export const useVoiceRecognition = (
   const onSpeechStart = useCallback(() => {
     console.log('語音識別開始');
     setRecognizedText('');
+    setIsListening(true);
   }, []);
 
   const onSpeechRecognized = useCallback(() => {
@@ -106,11 +104,13 @@ export const useVoiceRecognition = (
   const onSpeechEnd = useCallback(() => {
     console.log('語音識別結束');
     setIsRecording(false);
+    setIsListening(false);
   }, []);
 
   const onSpeechError = useCallback((e: any) => {
     console.error('語音識別錯誤:', e.error);
     setIsRecording(false);
+    setIsListening(false);
     Alert.alert('語音識別錯誤', e.error?.message || '語音識別失敗，請重試');
   }, []);
 
@@ -120,6 +120,7 @@ export const useVoiceRecognition = (
       const text = e.value[0];
       setRecognizedText(text);
       onSpeechResults?.(text);
+      setIsListening(false);
     }
   }, [onSpeechResults]);
 

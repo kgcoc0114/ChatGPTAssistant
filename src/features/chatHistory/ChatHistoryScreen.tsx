@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert, DeviceEventEmitter } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Icon from '@react-native-vector-icons/ionicons';
 import { useAuth } from '../../context/AuthContext';
@@ -66,7 +66,7 @@ const ChatHistoryScreen = () => {
   };
 
   // 簡單的導航，讓 ChatScreen 自己處理檢查
-  const handleChatPress = (chatId: string) => {
+  const handleChatPress = (chatId?: string) => {
     navigation.replace('MainTab', {
       screen: 'Chat',
       params: { chatId }
@@ -101,6 +101,21 @@ const ChatHistoryScreen = () => {
           },
         },
       ]
+    );
+  };
+
+  const EmptyStateView = ({ onStartNewChat }: { onStartNewChat: () => void }) => {
+    return (
+      <View style={styles.emptyContainer}>
+        <Text style={styles.emptyTitle}>還沒有對話記錄</Text>
+        <Text style={styles.emptySubtitle}>開始您的第一個 AI 對話吧！</Text>
+        <TouchableOpacity 
+          style={styles.newChatButton} 
+          onPress={onStartNewChat}
+        >
+          <Text style={styles.newChatButtonText}>+ 開始新對話</Text>
+        </TouchableOpacity>
+      </View>
     );
   };
 
@@ -157,11 +172,11 @@ const ChatHistoryScreen = () => {
       keyExtractor={item => item.chatId}
       renderItem={renderChatItem}
       contentContainerStyle={styles.container}
+      ListEmptyComponent={<EmptyStateView onStartNewChat={() => handleChatPress()} />}
     />
   );
 };
 
-// styles 保持不變...
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
@@ -228,7 +243,47 @@ const styles = StyleSheet.create({
   deleteButtonDisabled: {
     opacity: 0.5,
   },
-  // ... 其他 styles
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+    paddingVertical: 64,
+  },
+  emptyTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  emptySubtitle: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 32,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  newChatButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 25,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  newChatButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
 });
 
 export default ChatHistoryScreen;

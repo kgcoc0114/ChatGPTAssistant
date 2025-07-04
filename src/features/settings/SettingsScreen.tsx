@@ -80,25 +80,6 @@ const SettingsScreen = () => {
             </View>
             <Icon name="chevron-forward" size={20} color="#ccc" />
           </TouchableOpacity>
-
-          <View style={styles.separator} />
-
-          <TouchableOpacity
-            style={styles.settingItem}
-            onPress={handleClearAllHistory}
-          >
-            <View style={styles.settingItemLeft}>
-              <View style={[styles.iconContainer, styles.dangerIconContainer]}>
-                <Icon name="trash-outline" size={24} color="#ff4444" />
-              </View>
-              <View style={styles.textContainer}>
-                <Text style={[styles.settingTitle, styles.dangerText]}>
-                  清除所有記錄
-                </Text>
-                <Text style={styles.settingSubtitle}>刪除所有聊天記錄</Text>
-              </View>
-            </View>
-          </TouchableOpacity>
         </View>
       </View>
 

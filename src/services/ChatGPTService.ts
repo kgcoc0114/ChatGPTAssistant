@@ -3,8 +3,14 @@ import axios from 'axios';
 import { ENV } from '../../config/env';
 
 class ChatGPTService {
+  private static readonly systemPrompt = {
+    role: 'system',
+    content: '你是一個 AI 助手，請永遠使用繁體中文回覆，不要使用簡體中文。請用台灣常見用語回覆問題。',
+  };
+
   private static async makeRequest(messages: Array<{role: string, content: string}>, selectedModel: string) {
     try {
+      const enhancedMessages = [this.systemPrompt, ...messages];
       const response = await fetch(ENV.OPENAI_API_URL, {
         method: 'POST',
         headers: {
@@ -13,7 +19,7 @@ class ChatGPTService {
         },
         body: JSON.stringify({
           model: selectedModel,
-          messages: messages,
+          messages: enhancedMessages,
           max_tokens: 1000,
           temperature: 0.7,
         }),

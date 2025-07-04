@@ -30,9 +30,7 @@ const VoiceScreen = () => {
     try {
       const newConversation = await processVoiceInput(text);
       if (newConversation.audioUrl) {
-        // console.log('newConversation', newConversation.audioUrl, newConversation.id)
         await handlePlayAudio(newConversation.audioUrl, newConversation.id);
-        // playAudio(newConversation.audioUrl);
       }
       await stopRecording();
     } catch (error) {
@@ -41,7 +39,7 @@ const VoiceScreen = () => {
   }, [processVoiceInput]);
 
   const handleSpeechResults = useMemo(
-    () => debounce(rawHandleSpeechResults, 500), // 講完 300ms 後才觸發
+    () => debounce(rawHandleSpeechResults, 500), // 講完500ms 後才觸發
     [rawHandleSpeechResults]
   );
 
